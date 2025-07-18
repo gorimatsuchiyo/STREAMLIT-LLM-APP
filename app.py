@@ -23,15 +23,14 @@ st.divider()
 
 # OpenAI APIキーの確認
 if not os.getenv("OPENAI_API_KEY"):
-    st.error("🔑 OpenAI APIキーが設定されていません。")
+    st.error("OpenAI APIキーが設定されていません。環境変数 `OPENAI_API_KEY` を設定してください。")
     st.info("Streamlit Community Cloudをご利用の場合は、アプリの設定画面で環境変数 `OPENAI_API_KEY` を設定してください。")
     st.info("ローカル環境の場合は、`.env`ファイルに `OPENAI_API_KEY=your_api_key` を設定してください。")
     st.stop()
 
 # LLMの初期化
 @st.cache_resource
-def get_llm():
-    api_key = os.getenv("OPENAI_API_KEY")
+def get_llm(api_key):
     if not api_key:
         raise ValueError("OpenAI APIキーが設定されていません。.envファイルにOPENAI_API_KEY=your_api_keyを設定してください。")
     return ChatOpenAI(
@@ -39,7 +38,7 @@ def get_llm():
         temperature=0.7,
         openai_api_key=api_key
     )
-llm = get_llm()
+llm = get_llm(os.getenv("OPENAI_API_KEY"))
 
 # ユーザー入力の処理
 if selected_item == "子どもの栄養":
@@ -69,7 +68,6 @@ else:  # 子どもの睡眠
 # 質問処理（両モード共通）
 if st.button("質問する", type="primary"):
     if input_message and input_message.strip():
-        st.divider()
         with st.spinner("回答を生成中..."):
             try:
                 # LLMに質問を送信
@@ -81,8 +79,12 @@ if st.button("質問する", type="primary"):
                 # 回答を表示
                 st.markdown("### 回答")
                 st.write(response.content)
+            # 例外が発生する可能性がある主なケース:
+            # - OpenAI APIキーが未設定または無効
+            # - ネットワーク接続の問題
+            # - APIの利用制限（レートリミット）
+            # - その他の予期しないエラー
             except Exception as e:
                 st.error(f"エラーが発生しました: {str(e)}")
-                st.error("OpenAI APIキーが正しく設定されているか確認してください。")
     else:
         st.error("質問を入力してから「質問する」ボタンを押してください。")
